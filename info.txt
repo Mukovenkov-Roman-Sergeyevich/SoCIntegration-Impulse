@@ -1,0 +1,85 @@
+Methods of dealing with overflow:
+
+1) Extend in calculations, and then truncate
+  Pros:
+    a) Optimal accuracy loss when the result is guaranteed to fit into [ -2^(N-1); 2^(N-1) ]
+    b) Simplicity in logic
+  Cons:
+    a) Wider data increases area and potentially power consumption
+    b) When dealing with signals, a sudden truncation can feel very jarring - critically unacceptable
+       The overflow when truncating must be avoided at all costs. The overflow handling is probably a must unless 100% guaranteed
+       Take an operation 16382 + 3 for example: 16383 when clamped, 1 when truncated
+    c) No overflow info
+
+2) Saturate after each operation (Clamping)
+  Pros:
+    a) Stability and smoothness for use when overflow is possible
+    d) Implicit overflow "flag"
+  Cons:
+    a) Each operation requires more resources for clamping (very noticable)
+    b) Potentially increased latency, power consumption
+    c) Loss of accuracy even when the result fits into [ -2^(N-1); 2^(N-1) ]
+
+3) Saturate after all operations with extended operands (Best of both methods)
+  Pros:
+    a) Stability and smoothness for use when overflow is possible
+    b) Optimal accuracy loss when the result is guaranteed to fit into [ -2^(N-1); 2^(N-1) ]
+    c) Requires to clamp only the result
+    d) Implicit overflow "flag"
+  Cons:
+    a) Wider data increases area and potentially power consumption
+
+4) Discard lower bits by shifting right an agreed amount of bits (or potentially output that amount of bits)
+  Pros:
+    a) Preserves the magnitude at the cost of accuracy in the lower bits
+    b) Overflow info
+  Cons:
+    a) Special handling in other modules, increasing their complexity
+
+Method 3 is the preferred method in our case
+
+Flow summary:
+Quartus Prime Version	21.1.1 Build 850 06/23/2022 SJ Lite Edition
+Family	Cyclone V
+Device	5CSXFC6D6F31C6
+Timing Models	Final
+Logic utilization (in ALMs)	48 / 41,910 ( < 1 % )
+Total registers	105
+Total pins	44 / 499 ( 9 % )
+Total virtual pins	0
+Total block memory bits	0 / 5,662,720 ( 0 % )
+Total DSP Blocks	1 / 112 ( < 1 % )
+Total HSSI RX PCSs	0 / 9 ( 0 % )
+Total HSSI PMA RX Deserializers	0 / 9 ( 0 % )
+Total HSSI TX PCSs	0 / 9 ( 0 % )
+Total HSSI PMA TX Serializers	0 / 9 ( 0 % )
+Total PLLs	0 / 15 ( 0 % )
+Total DLLs	0 / 4 ( 0 % )
+
+Review:
+
+This is for parameter N=8. 
+Resource utilization is reasonable given the small size and pipelining
+Number of stages can be changed if one were to prefer lower latency over Fmax
+A DSP block is used for fast multiplication - this is good
+
+Clock
+Period	Frequency
+5.000	200.0 MHz
+
+Slow 1100 mV 85C Model
+Fmax 216.45 MHz
+Slack 0.214
+
+Slow 1100 mV 0C Model
+Fmax 208.94 MHz
+Slack 0.163
+
+Fast 1100 mV 85C Model
+Slack 2.376
+
+Fast 1100 mV 0C Model
+Slack 2.471
+
+Review:
+Good pipelining yielded decent Fmax. A trade off is that latency is 5.
